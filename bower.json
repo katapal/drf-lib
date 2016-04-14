@@ -1,0 +1,22 @@
+{
+  "name": "drf-lib",
+  "version": "0.0.1",
+  "private": "true",
+  "description": "Convenience library for connecting to DRF services.",
+  "devDependencies": {
+    "angular-mocks": "1.5.3",
+    "jasmine": "~2.4.1",
+    "sinon": "~1.17.3"
+  },
+  "dependencies": {
+    "angular-resource": "1.5.3",
+    "ngstorage": "~0.3.10",
+    "underscore.string": "~3.3.4"
+  },
+  "resolutions": {
+    "angular": "1.5.3"
+  },
+  "authors": [
+    "David Xiao <dxiao@katapal.com>"
+  ]
+}
