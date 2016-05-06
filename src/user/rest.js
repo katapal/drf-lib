@@ -1,4 +1,4 @@
-angular.module("drf-lib.user.rest", ["ngResource", "drf-lib.url"])
+angular.module("drf-lib.user.rest", ["ngResource", "rest-api.url"])
   .service("userRest", ["$resource", "urlOf", "$http", "drfUtil",
     function($resource, urlOf, $http, drfUtil) {
       var self = this;

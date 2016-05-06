@@ -7,21 +7,13 @@ var authModule = angular.module(
 )
   .service(
   'authInterceptor',
-  ['$injector', 'urlService', '$q',
-    function($injector, urlService, $q) {
+  ['$injector', 'urlService',
+    function($injector, urlService) {
       return {
-        'responseError': function(response) {
-          var authService = $injector.get('authService');
-          if ((response.status == 401) && authService.isAuthenticated()) {
-            authService.logout(response);
-          }
-          return $q.reject(response);
-        },
-
         'request': function(config) {
           var authService = $injector.get('authService');
           if (urlService.domainRequiresAuthorization(config.url) &&
-            authService.isAuthenticated()) {
+              authService.isAuthenticated()) {
             config.headers = config.headers || {};
             config.headers['Authorization'] = authService.authHeader();
           }
@@ -53,8 +45,15 @@ var authService =
 
 authService.prototype.login = function (u, p) {
   var self = this;
-  var promise = self.authRest.login(u, p);
-  return promise.then(function(token) {
+  return self.authRest.login(u, p).then(function(token) {
+    self.setIdentity(token, u);
+    return token;
+  });
+};
+
+authService.prototype.externalLogin = function(provider, request) {
+  var self = this;
+  return self.authRest.externalLogin(provider, request).then(function(token) {
     self.setIdentity(token, u);
     return token;
   });
@@ -77,7 +76,7 @@ authService.prototype.setIdentity = function(token, username) {
   }
 };
 
-authService.prototype.unsetToken = function(response) {
+authService.prototype.logout = function(errorResponse) {
   var self = this;
   if (self.$localStorage.auth)
     delete self.$localStorage.auth.token;
@@ -93,13 +92,21 @@ authService.prototype.unsetToken = function(response) {
         self,
         {
           'authService': self,
-          'response': response
+          'response': errorResponse
         }
       );
     } catch (e) {
       self.$log.error("error running logout callback: " + e);
     }
   }
+};
+
+authService.prototype.logoutEverywhere = function() {
+  var self = this;
+  return self.authRest.logoutEverywhere().then(function(r) {
+    self.logout();
+    return r;
+  });
 };
 
 authService.prototype.getToken = function() {
@@ -123,8 +130,6 @@ authService.prototype.isAuthenticated = function() {
   var self = this;
   return self.$localStorage.auth && !!self.$localStorage.auth.token;
 };
-
-authService.prototype.logout = authService.prototype.unsetToken;
 
 authModule.provider('authService', function () {
   var self = this;

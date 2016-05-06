@@ -3,7 +3,7 @@ describe("drf-lib.user", function() {
 
   beforeEach(function() {
     module("ngResource");
-    angular.module("drf-lib.url", [])
+    angular.module("rest-api.url", [])
       .factory('urlOf', function() {
         var map = {
           'rest-auth-user': '/rest-auth/user/',
@@ -30,7 +30,7 @@ describe("drf-lib.user", function() {
         $resourceProvider.defaults.stripTrailingSlashes = false;
       });
     module("drf-lib.util");
-    module("drf-lib.url");
+    module("rest-api.url");
     module('drf-lib.user.rest');
   });
 

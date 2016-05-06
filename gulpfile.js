@@ -18,9 +18,9 @@ gulp.task('lint', function() {
 // Concatenate & Minify JS
 gulp.task('scripts', function() {
   return gulp.src('src/**/*.js')
-    .pipe(concat('gu-lib.js'))
+    .pipe(concat('drf-lib.js'))
     .pipe(gulp.dest('dist'))
-    .pipe(rename('gu-lib.min.js'))
+    .pipe(rename('drf-lib.min.js'))
     .pipe(uglify())
     .pipe(gulp.dest('dist'));
 });

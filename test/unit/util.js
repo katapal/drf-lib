@@ -205,19 +205,4 @@ describe("drf-lib.util", function () {
 
     $rootScope.$digest();
   });
-
-  it("should copy properties to object", function() {
-    var obj1, obj2;
-    obj1 = {"hello": "OK"};
-    obj = drfUtil.copy(obj1, obj2);
-    expect(obj["hello"]).toBe("OK");
-    obj2 = {};
-    drfUtil.copy(obj1, obj2);
-    expect(obj2["hello"]).toBe("OK");
-    obj2["hello"] = "BAD";
-    obj2["hello2"] = "OK";
-    drfUtil.copy(obj1, obj2);
-    expect(obj2["hello"]).toBe("OK");
-    expect(obj2["hello2"]).toBe("OK");
-  })
 });

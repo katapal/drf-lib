@@ -30,15 +30,16 @@ angular.module("drf-lib.util", [])
             postProcess = function(x) { return x; };
 
           return p.then(postProcess).then(function(result) {
-            if (angular.isNumber(result.count)) {
-              var l = result.results;
-              l.count = result.count;
-              return l;
-            } else
+            if (result.hasOwnProperty("results")) {
+              var ret = result.results;
+              if (angular.isNumber(result.count)) 
+                ret.count = result.count;
+              return ret;
+            } else 
               return result;
           });
-        }
-      }
+        };
+      };
     }
   ])
   .service("drfUtil", ['$window', '$q', function($window, $q) {
@@ -56,7 +57,7 @@ angular.module("drf-lib.util", [])
         } else if (angular.isObject(str)) {
           var obj = str, objCopy = {};
           for (var property in obj) {
-            if (obj.hasOwnProperty(property) && property.indexOf('$') != 0) {
+            if (obj.hasOwnProperty(property) && property.indexOf('$') !== 0) {
               if (angular.isObject(obj[property]))
                 objCopy[f(property)] = rewriter(obj[property]);
               else
@@ -107,7 +108,7 @@ angular.module("drf-lib.util", [])
           var methodClosure = function(f) {
             return function() {
               return f.apply(obj, arguments);
-            }
+            };
           };
           copy.wrapped[k] = self.wrapMethod(
             methodClosure(obj[k]),
@@ -119,15 +120,11 @@ angular.module("drf-lib.util", [])
       return copy;
     };
 
-    self.copy = function(fromObj, toObj) {
-      if (!angular.isObject(toObj))
-        toObj = {};
-
-      for (var k in fromObj) {
-        if (fromObj.hasOwnProperty(k))
-          toObj[k] = fromObj[k];
-      }
-
-      return toObj;
+    self.uuid4 = function() {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
     };
+    
   }]);

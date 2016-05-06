@@ -5,7 +5,7 @@ describe("drf-lib.auth.services", function () {
   var URL_ROOT = "https://testserver/";
 
   beforeEach(function() {
-    angular.module("drf-lib.url", [])
+    angular.module("rest-api.url", [])
       .factory('urlOf', function() {
         return {"login": "https://testserver/login/"}
       })
@@ -17,7 +17,7 @@ describe("drf-lib.auth.services", function () {
       });
 
     module('drf-lib.auth.services');
-    module("drf-lib.url");
+    module("rest-api.url");
   });
 
 
@@ -25,6 +25,9 @@ describe("drf-lib.auth.services", function () {
     var self = this;
     self.login = function () {
       return $q.when("OK");
+    };
+    self.logoutEverywhere = function() {
+      return $q.when("logged out");
     };
     return self;
   };
@@ -77,23 +80,6 @@ describe("drf-lib.auth.services", function () {
       $rootScope.$apply();
     });
 
-    it("should unset token", function(done) {
-      authService.login("user", "passw0rd")
-        .then(function(token) {
-          expect(token).toEqual("OK");
-          expect(authService.isAuthenticated()).toBeTruthy();
-          expect(authService.getToken()).toEqual("OK");
-          authService.unsetToken();
-          expect(authService.isAuthenticated()).toBeFalsy();
-          expect(authService.getToken()).toBeUndefined();
-        })
-        .catch(function(error) {
-          expect(error).toBeUndefined();
-        })
-        .finally(done);
-      $rootScope.$apply();
-    });
-
     it("should logout", function(done) {
       authService.login("user", "passw0rd")
         .then(function(token) {
@@ -111,6 +97,24 @@ describe("drf-lib.auth.services", function () {
       $rootScope.$apply();
     });
 
+    it("should logout everywhere", function(done) {
+      authService.login("user", "passw0rd")
+        .then(function(token) {
+          expect(token).toEqual("OK");
+          expect(authService.isAuthenticated()).toBeTruthy();
+          expect(authService.getToken()).toEqual("OK");
+          authService.logoutEverywhere().then(function(r) {
+            expect(r).toEqual("logged out");
+            expect(authService.isAuthenticated()).toBeFalsy();
+            expect(authService.getToken()).toBeUndefined();
+          });
+        })
+        .catch(function(error) {
+          expect(error).toBeUndefined();
+        })
+        .finally(done);
+      $rootScope.$apply();
+    });
   });
 
 
@@ -204,25 +208,6 @@ describe("drf-lib.auth.services", function () {
       expect(config.headers).toBeUndefined();
     });
 
-    it("should logout on 401 response", function() {
-      authService.setIdentity("OK");
-      var spy = sinon.spy(authService, 'logout');
-      authInterceptor.responseError({status:401});
-      expect(spy.called).toBeTruthy();
-    });
-
-    it("should not logout on valid response", function() {
-      authService.setIdentity("OK");
-      var spy = sinon.spy(authService, 'logout');
-      authInterceptor.responseError({status:500});
-      expect(spy.called).toBeFalsy();
-    });
-
-    it("should not logout on 401 response if not logged in", function() {
-      var spy = sinon.spy(authService, 'logout');
-      authInterceptor.responseError({status:401});
-      expect(spy.called).toBeFalsy();
-    });
   });
 
   describe("set HTTP interceptors", function() {
@@ -262,18 +247,6 @@ describe("drf-lib.auth.services", function () {
       $httpBackend.when('GET', URL_ROOT, null, function(headers) {
         expect(headers.Authorization).toBeUndefined();
       }).respond("OK");
-    });
-
-    it("should call response interceptor on 401", function(done) {
-      authService.setIdentity("OK");
-      var spy = sinon.spy(authService, 'logout');
-      $httpBackend.whenGET(URL_ROOT, function(headers) {
-        expect(headers.Authorization).toBe(authService.authHeader());
-        return true;
-      }).respond(401, {'reason': 'duh'});
-      $http.get(URL_ROOT).finally(done);
-      $httpBackend.flush();
-      expect(spy.called).toBeTruthy();
     });
 
     it("should not call response interceptor if not logged in", function(done) {

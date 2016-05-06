@@ -4,9 +4,13 @@ describe("drf-lib.auth.rest", function () {
   var loginCalledBack, loginCalledBackInjected, logoutCalledBack;
 
   beforeEach(function() {
-    angular.module("drf-lib.url", [])
+    angular.module("rest-api.url", [])
       .factory('urlOf', function() {
-        return {"login": "https://testserver/login/"}
+        return {
+          "login": "https://testserver/login/",
+          "facebook-login": "https://testserver/facebook-login/",
+          "logout": "https://testserver/logout/"
+        }
       })
       .service('urlService', function() {
         var self = this;
@@ -14,7 +18,8 @@ describe("drf-lib.auth.rest", function () {
           return url.startsWith("https://testserver");
         }
       });
-    module("drf-lib.url");
+    module("rest-api.url");
+    module("drf-lib.util");
     module("ngStorage");
     module('drf-lib.auth.rest');
   });
@@ -60,6 +65,31 @@ describe("drf-lib.auth.rest", function () {
       })
       .finally(done);
 
+    $httpBackend.flush();
+  });
+
+  it("should logout everywhere", function(done) {
+    $httpBackend.expectPOST(urlOf['logout']).respond("OK");
+    authRest.logoutEverywhere().then(function(result) {
+      expect(result["data"]).toEqual("OK");
+    })
+      .finally(done);
+    $httpBackend.flush();
+  });
+
+  it("should throw error on bad external login", function(done) {
+    authRest.externalLogin("twitter", {"access_token": "1"}).catch(function(e) {
+      expect(e.provider).toEqual("twitter");
+    }).finally(done);
+    $httpBackend.flush();
+  });
+
+  it("should allow external login", function(done) {
+    $httpBackend.expectPOST(urlOf['facebook-login'], {"access_token": "1"})
+      .respond({"key": "OK"});
+    authRest.externalLogin("facebook", {"accessToken": "1"}).then(function(r) {
+      expect(r).toEqual("OK");
+    }).finally(done);
     $httpBackend.flush();
   });
 });
