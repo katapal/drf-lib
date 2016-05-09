@@ -208,6 +208,26 @@ describe("drf-lib.auth.services", function () {
       expect(config.headers).toBeUndefined();
     });
 
+
+    it("should logout on 401 response", function() {
+      authService.setIdentity("OK");
+      var spy = sinon.spy(authService, 'logout');
+      authInterceptor.responseError({status:401});
+      expect(spy.called).toBeTruthy();
+    });
+
+    it("should not logout on valid response", function() {
+      authService.setIdentity("OK");
+      var spy = sinon.spy(authService, 'logout');
+      authInterceptor.responseError({status:500});
+      expect(spy.called).toBeFalsy();
+    });
+
+    it("should not logout on 401 response if not logged in", function() {
+      var spy = sinon.spy(authService, 'logout');
+      authInterceptor.responseError({status:401});
+      expect(spy.called).toBeFalsy();
+    });
   });
 
   describe("set HTTP interceptors", function() {
@@ -247,6 +267,18 @@ describe("drf-lib.auth.services", function () {
       $httpBackend.when('GET', URL_ROOT, null, function(headers) {
         expect(headers.Authorization).toBeUndefined();
       }).respond("OK");
+    });
+
+    it("should call response interceptor on 401", function(done) {
+      authService.setIdentity("OK");
+      var spy = sinon.spy(authService, 'logout');
+      $httpBackend.whenGET(URL_ROOT, function(headers) {
+        expect(headers.Authorization).toBe(authService.authHeader());
+        return true;
+      }).respond(401, {'reason': 'duh'});
+      $http.get(URL_ROOT).finally(done);
+      $httpBackend.flush();
+      expect(spy.called).toBeTruthy();
     });
 
     it("should not call response interceptor if not logged in", function(done) {

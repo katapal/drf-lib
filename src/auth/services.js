@@ -7,9 +7,16 @@ var authModule = angular.module(
 )
   .service(
   'authInterceptor',
-  ['$injector', 'urlService',
-    function($injector, urlService) {
+  ['$injector', 'urlService', "$q",
+    function($injector, urlService, $q) {
       return {
+        'responseError': function(response) {
+          var authService = $injector.get('authService');
+          if ((response.status == 401) && authService.isAuthenticated()) {
+            authService.logout(response);
+          }
+          return $q.reject(response);
+        },
         'request': function(config) {
           var authService = $injector.get('authService');
           if (urlService.domainRequiresAuthorization(config.url) &&
