@@ -9,10 +9,8 @@ angular.module("drf-lib.util", [])
 
       /**
        * Creates a new list function that sends a request possibly with filters
-       * and takes a response either containing either just an array of results
-       * (returned when there is no paging)
-       * or an object containing both a count and a results array (when there
-       * is paging)
+       * and takes a response that is paginated.  The response is assumed to be
+       * an object with a results attribute and possibly a count attribute.
        *
        * @param resource
        * @param postProcess
@@ -22,9 +20,7 @@ angular.module("drf-lib.util", [])
         return function(filterArgs) {
           filterArgs = drfUtil.underscoredProperties(filterArgs) || {};
 
-          var p = filterArgs.hasOwnProperty("limit") ?
-            resource.get(filterArgs).$promise :
-            resource.query(filterArgs).$promise;
+          var p = resource.get(filterArgs).$promise;
 
           if (!postProcess)
             postProcess = function(x) { return x; };
