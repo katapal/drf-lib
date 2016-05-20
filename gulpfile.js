@@ -26,3 +26,5 @@ gulp.task('scripts', function() {
 });
 
 gulp.task('default', ['lint', 'scripts']);
+
+gulp.task('pre-commit', ['default']);
