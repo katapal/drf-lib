@@ -27,7 +27,7 @@ describe("drf-lib.util", function () {
       var url = "http://testserver/resource";
       var r = $resource(url);
       var listFunction = restServiceHelper.createListFunction(r);
-      $httpBackend.expectGET(url).respond(["1"]);
+      $httpBackend.expectGET(url).respond({ results: ["1"] });
       listFunction().then(function(result) {
         expect(result.length).toEqual(1);
         expect(result[0]).toEqual("1");

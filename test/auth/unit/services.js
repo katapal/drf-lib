@@ -16,6 +16,10 @@ describe("drf-lib.auth.services", function () {
         }
       });
 
+    module('drf-lib.user.rest');
+    module('drf-lib.util');
+    module('drf-lib.error');
+    module("angular.filter");
     module('drf-lib.auth.services');
     module("rest-api.url");
   });
