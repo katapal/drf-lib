@@ -71,8 +71,8 @@ authService.prototype.externalLogin = function(provider, request) {
       return result;
     }).catch(function(err) {
       var msg = self.errorParser.extractMessage(err);
-      self.$log.error("Could not get user profile: " + msg);
-      return {};
+      self.$log.error("Could not load user profile: " + msg);
+      throw err;
     });
   });
 };
