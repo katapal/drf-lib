@@ -68,13 +68,12 @@ authService.prototype.externalLogin = function(provider, request) {
     self.setIdentity(token, null);
     return self.userRest.getProfile().then(function(result) {
       self.$localStorage.auth.username = result.username;
+      return result;
     }).catch(function(err) {
       var msg = self.errorParser.extractMessage(err);
       self.$log.error("Could not get user profile: " + msg);
-    }).then(function() {
-      return token;
+      return {};
     });
-
   });
 };
 
