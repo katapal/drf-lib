@@ -192,7 +192,8 @@ angular.module('drf-lib.auth.rest', ['ngResource', 'rest-api.url'])
  */
 
 var authModule = angular.module(
-  'drf-lib.auth.services', ['drf-lib.auth.rest']
+  'drf-lib.auth.services',
+  ['drf-lib.auth.rest', 'drf-lib.user.rest', 'drf-lib.error']
 )
   .service(
   'authInterceptor',
@@ -211,7 +212,8 @@ var authModule = angular.module(
           if (urlService.domainRequiresAuthorization(config.url) &&
               authService.isAuthenticated()) {
             config.headers = config.headers || {};
-            config.headers['Authorization'] = authService.authHeader();
+            if (!config.headers.Authorization)
+              config.headers.Authorization = authService.authHeader();
           }
           return config;
         }
@@ -224,7 +226,7 @@ var authModule = angular.module(
 
 
 var authService =
-  function(authRest, $localStorage, $injector, $log,
+  function(authRest, $localStorage, $injector, $log, userRest, errorParser,
            loginCallbacks, logoutCallbacks) {
     var self = this;
 
@@ -234,6 +236,8 @@ var authService =
     self.$log = $log;
     self.loginCallbacks = loginCallbacks;
     self.logoutCallbacks = logoutCallbacks;
+    self.userRest = userRest;
+    self.errorParser = errorParser;
 
     if ($localStorage.auth && $localStorage.auth.token)
       self.setIdentity($localStorage.auth.token, $localStorage.auth.username);
@@ -250,8 +254,16 @@ authService.prototype.login = function (u, p) {
 authService.prototype.externalLogin = function(provider, request) {
   var self = this;
   return self.authRest.externalLogin(provider, request).then(function(token) {
-    self.setIdentity(token, u);
-    return token;
+    self.setIdentity(token, null);
+    return self.userRest.getProfile().then(function(result) {
+      self.$localStorage.auth.username = result.username;
+    }).catch(function(err) {
+      var msg = self.errorParser.extractMessage(err);
+      self.$log.error("Could not get user profile: " + msg);
+    }).then(function() {
+      return token;
+    });
+
   });
 };
 
@@ -341,10 +353,10 @@ authModule.provider('authService', function () {
   };
 
   self.$get = [
-    'authRest', '$localStorage', '$injector', '$log',
-    function (authRest, $localStorage, $injector, $log) {
+    'authRest', '$localStorage', '$injector', '$log', 'userRest', 'errorParser',
+    function (authRest, $localStorage, $injector, $log, userRest, errorParser) {
       return new authService(
-        authRest, $localStorage, $injector, $log,
+        authRest, $localStorage, $injector, $log, userRest, errorParser,
         loginCallbacks, logoutCallbacks
       );
     }
