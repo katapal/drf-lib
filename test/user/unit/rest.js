@@ -10,7 +10,8 @@ describe("drf-lib.user", function() {
           'rest-auth-register': '/rest-auth/registration/',
           'rest-auth-set-password': '/rest-auth/password/change/',
           'rest-auth-reset-password': '/rest-auth/password/reset/',
-          'rest-auth-confirm-reset': '/rest-auth/password/reset/confirm/'
+          'rest-auth-confirm-reset': '/rest-auth/password/reset/confirm/',
+          'rest-auth-user-external-login': '/rest-auth/user/:username/social-account/:externalLoginId/'
         };
 
         // prepend the server name
@@ -103,6 +104,22 @@ describe("drf-lib.user", function() {
     userRest.registerUser("1", "1234", "1234", "1234@asdf.com").then(function(result){
       expect(result).toEqual({"status": "OK"});
     }).finally(done);
+    $httpBackend.flush();
+  });
+
+  it("should remove user external login", function(done) {
+    $httpBackend.expectDELETE(
+      urlOf['rest-auth-user-external-login'].replace(":username", 1).replace(":externalLoginId", 10)
+    ).respond({"status": "OK"});
+    userRest.disconnectExternalLogin({username: 1}, 10)
+      .then(function(result) {
+        expect(result).toEqual({"status": "OK"});
+      })
+      .catch(function(err) {
+        expect(err).toBeUndefined()
+      })
+      .finally(done);
+
     $httpBackend.flush();
   });
 

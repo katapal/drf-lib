@@ -53,4 +53,14 @@ angular.module("drf-lib.user.rest", ["ngResource", "rest-api.url"])
         return $http.post(urlOf['rest-auth-confirm-reset'], confirmation)
           .then(extractData).then(postProcess);
       };
+      
+      self.disconnectExternalLogin = function(user, externalLoginId) {
+        var UserExternalLogin = $resource(
+          urlOf['rest-auth-user-external-login']
+        );
+        return UserExternalLogin.remove({
+          'username': user.username,
+          'externalLoginId': externalLoginId
+        }).$promise.then(postProcess);
+      };
     }]);
