@@ -16,7 +16,7 @@ angular.module("drf-lib.user.rest", ["ngResource", "rest-api.url"])
 
       self.setProfile = function(profile) {
         profile = drfUtil.underscoredProperties(profile);
-        var User = $resource(urlOf["rest-auth-user"], undefined,
+        var User = $resource(urlOf["rest-auth-user-self"], undefined,
           {update: {method:"PUT"}});
         var u = new User(profile);
         return u.$update().then(postProcess);

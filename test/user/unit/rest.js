@@ -7,6 +7,7 @@ describe("drf-lib.user", function() {
       .factory('urlOf', function() {
         var map = {
           'rest-auth-user': '/rest-auth/user/',
+          'rest-auth-user-self': '/rest-auth/user/self/',
           'rest-auth-register': '/rest-auth/registration/',
           'rest-auth-set-password': '/rest-auth/password/change/',
           'rest-auth-reset-password': '/rest-auth/password/reset/',
@@ -58,7 +59,7 @@ describe("drf-lib.user", function() {
   });
 
   it("should set user profile", function(done) {
-    $httpBackend.expectPUT(urlOf['rest-auth-user'], {"data": "1234"})
+    $httpBackend.expectPUT(urlOf['rest-auth-user-self'], {"data": "1234"})
       .respond({"status": "OK"});
     userRest.setProfile({"data": "1234"}).then(function(result){
       expect(result).toEqual({"status": "OK"});
