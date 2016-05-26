@@ -133,6 +133,13 @@ authService.prototype.getToken = function() {
     return self.$localStorage.auth.token;
 };
 
+authService.prototype.setUsername = function(username) {
+  var self = this;
+  if (self.$localStorage.auth)
+    self.$localStorage.auth.username = username;
+  else 
+    throw "Not logged in";
+};
 authService.prototype.getUsername = function() {
   var self = this;
   if (self.$localStorage.auth)
