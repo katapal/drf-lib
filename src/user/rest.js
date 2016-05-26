@@ -54,6 +54,17 @@ angular.module("drf-lib.user.rest", ["ngResource", "rest-api.url"])
           .then(extractData).then(postProcess);
       };
       
+      self.linkExternalLogin = function(provider, args) {
+        args = drfUtil.underscoredProperties(args);
+        if (urlOf[provider + "-login"]) {
+          return $http.post(
+            urlOf[provider + "-login"] + "?process=connect", 
+            args
+          ).then(function(result) { return result.data; }).then(postProcess);
+        } else
+          return $q.reject({"provider": provider});
+      };
+      
       self.disconnectExternalLogin = function(user, externalLoginId) {
         var UserExternalLogin = $resource(
           urlOf['rest-auth-user-external-login']

@@ -11,7 +11,8 @@ describe("drf-lib.user", function() {
           'rest-auth-set-password': '/rest-auth/password/change/',
           'rest-auth-reset-password': '/rest-auth/password/reset/',
           'rest-auth-confirm-reset': '/rest-auth/password/reset/confirm/',
-          'rest-auth-user-external-login': '/rest-auth/user/:username/social-account/:externalLoginId/'
+          'rest-auth-user-external-login': '/rest-auth/user/:username/social-account/:externalLoginId/',
+          "facebook-login": "https://testserver/facebook-login/"
         };
 
         // prepend the server name
@@ -116,11 +117,25 @@ describe("drf-lib.user", function() {
         expect(result).toEqual({"status": "OK"});
       })
       .catch(function(err) {
-        expect(err).toBeUndefined()
+        expect(err).toBeUndefined();
       })
       .finally(done);
 
     $httpBackend.flush();
   });
 
+  it("should link external login", function(done) {
+    $httpBackend.expectPOST(urlOf["facebook-login"] + "?process=connect", {
+      access_token: "token"
+    }).respond({"status": "OK"});
+    userRest.linkExternalLogin("facebook", {accessToken: "token"})
+      .then(function(result) {
+        expect(result).toEqual({"status": "OK"});
+      })
+      .catch(function(err) {
+        expect(err).toBeUndefined();
+      })
+      .finally(done);
+    $httpBackend.flush();
+  });
 });
