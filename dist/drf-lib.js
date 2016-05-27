@@ -382,7 +382,7 @@ angular.module("drf-lib.user.rest", ["ngResource", "rest-api.url"])
       };
 
       self.getProfile = function() {
-        var User = $resource(urlOf["rest-auth-user"]);
+        var User = $resource(urlOf["rest-auth-user-self"]);
         return User.get().$promise.then(postProcess);
       };
 

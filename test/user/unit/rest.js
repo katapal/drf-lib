@@ -6,7 +6,6 @@ describe("drf-lib.user", function() {
     angular.module("rest-api.url", [])
       .factory('urlOf', function() {
         var map = {
-          'rest-auth-user': '/rest-auth/user/',
           'rest-auth-user-self': '/rest-auth/user/self/',
           'rest-auth-register': '/rest-auth/registration/',
           'rest-auth-set-password': '/rest-auth/password/change/',
@@ -50,7 +49,7 @@ describe("drf-lib.user", function() {
   });
 
   it("should get user profile", function(done) {
-    $httpBackend.expectGET(urlOf['rest-auth-user'])
+    $httpBackend.expectGET(urlOf['rest-auth-user-self'])
       .respond({"status": "OK"});
     userRest.getProfile().then(function(result){
       expect(result).toEqual({"status": "OK"});
