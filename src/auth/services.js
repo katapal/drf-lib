@@ -151,9 +151,7 @@ authService.prototype.setJWT = function(leeway, minDelay) {
 authService.prototype.logout = function(errorResponse) {
   var self = this;
   if (self.$localStorage.auth)
-    delete self.$localStorage.auth.token;
-  if (self.$localStorage.username)
-    delete self.$localStorage.auth.username;
+    delete self.$localStorage.auth;
   if (self.refreshPromise) {
     self.$timeout.cancel(self.refreshPromise);
     delete self.refreshPromise;
