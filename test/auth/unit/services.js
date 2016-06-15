@@ -6,8 +6,14 @@ describe("drf-lib.auth.services", function () {
 
   beforeEach(function() {
     angular.module("rest-api.url", [])
+      .config(function($resourceProvider) {
+        $resourceProvider.defaults.stripTrailingSlashes = false;
+      })
       .factory('urlOf', function() {
-        return {"login": "https://testserver/login/"}
+        return {
+          "login": "https://testserver/login/",
+          "rest-auth-user-self": "https://testserver/self/"
+        };
       })
       .service('urlService', function() {
         var self = this;
@@ -33,6 +39,12 @@ describe("drf-lib.auth.services", function () {
     self.logoutEverywhere = function() {
       return $q.when("logged out");
     };
+    self.jwt = function() {
+      return $q.when("OK");
+    };
+    self.setUserRefresh = function() {
+      
+    };
     return self;
   };
   authRestDef.$inject = ['$q'];
@@ -46,19 +58,24 @@ describe("drf-lib.auth.services", function () {
 
   describe("basic functionality", function () {
 
-    beforeEach(inject(function(_authService_, _authRest_, _$rootScope_, _$q_){
+    beforeEach(inject(function(_authService_, _authRest_, _$rootScope_, _$q_,
+                               _$httpBackend_, _urlOf_){
       authRest = _authRest_;
       authService = _authService_;
       $rootScope = _$rootScope_;
       $q = _$q_;
+      $httpBackend = _$httpBackend_;
+      urlOf = _urlOf_;
     }));
 
     it("should call rest service and authenticate", function (done) {
+      $httpBackend.expectGET(urlOf['rest-auth-user-self'])
+        .respond({"id": "OK"});
       var spy = sinon.spy(authRest, 'login');
       var promise = authService.login("user", "passw0rd");
       promise
         .then(function(result) {
-          expect(result).toEqual("OK");
+          expect(result.id).toEqual("OK");
           expect(authService.isAuthenticated()).toBeTruthy();
           expect(authService.getToken()).toEqual("OK");
         })
@@ -66,7 +83,7 @@ describe("drf-lib.auth.services", function () {
           expect(error).toBeUndefined();
         })
         .finally(done);
-      $rootScope.$apply();
+      $httpBackend.flush();
       expect(spy.calledWith("user", "passw0rd")).toBeTruthy();
     });
 
@@ -85,9 +102,11 @@ describe("drf-lib.auth.services", function () {
     });
 
     it("should logout", function(done) {
+      $httpBackend.expectGET(urlOf['rest-auth-user-self'])
+        .respond({"id": "OK"});
       authService.login("user", "passw0rd")
-        .then(function(token) {
-          expect(token).toEqual("OK");
+        .then(function(result) {
+          expect(result.id).toEqual("OK");
           expect(authService.isAuthenticated()).toBeTruthy();
           expect(authService.getToken()).toEqual("OK");
           authService.logout();
@@ -98,13 +117,15 @@ describe("drf-lib.auth.services", function () {
           expect(error).toBeUndefined();
         })
         .finally(done);
-      $rootScope.$apply();
+      $httpBackend.flush();
     });
 
     it("should logout everywhere", function(done) {
+      $httpBackend.expectGET(urlOf['rest-auth-user-self'])
+        .respond({"id": "OK"});
       authService.login("user", "passw0rd")
-        .then(function(token) {
-          expect(token).toEqual("OK");
+        .then(function(result) {
+          expect(result.id).toEqual("OK");
           expect(authService.isAuthenticated()).toBeTruthy();
           expect(authService.getToken()).toEqual("OK");
           authService.logoutEverywhere().then(function(r) {
@@ -117,7 +138,7 @@ describe("drf-lib.auth.services", function () {
           expect(error).toBeUndefined();
         })
         .finally(done);
-      $rootScope.$apply();
+      $httpBackend.flush();
     });
   });
 
@@ -149,18 +170,21 @@ describe("drf-lib.auth.services", function () {
 
     beforeEach(inject(
       function(_authService_, _authRest_, _$rootScope_, _$q_, _urlOf_,
-               _$log_){
+               _$log_, _$httpBackend_){
         authRest = _authRest_;
         authService = _authService_;
         $rootScope = _$rootScope_;
         $q = _$q_;
         urlOf = _urlOf_;
         $log = _$log_;
+        $httpBackend = _$httpBackend_;
       }
     ));
 
 
     it("should login and make callback", function (done) {
+      $httpBackend.expectGET(urlOf['rest-auth-user-self'])
+        .respond({"id": "OK"});
       var spy = sinon.stub($log, 'error');
       expect(loginCalledBack).toBeUndefined();
       expect(loginCalledBackInjected).toBeUndefined();
@@ -169,11 +193,11 @@ describe("drf-lib.auth.services", function () {
           expect(authService.isAuthenticated()).toBeTruthy();
           expect(loginCalledBack).toEqual('OK');
           expect(loginCalledBackInjected).toEqual(urlOf['login']);
-          var call = spy.getCall(0);
+          var call = spy.lastCall;
           expect(call.args[0].indexOf("login error") > -1).toBeTruthy();
           done();
         });
-      $rootScope.$apply();
+      $httpBackend.flush();
     });
 
     it("should logout and make callback", function () {
@@ -189,42 +213,51 @@ describe("drf-lib.auth.services", function () {
 
   describe("interceptor", function() {
     var authInterceptor;
-    beforeEach(inject(function(_authInterceptor_, _authService_){
+    beforeEach(inject(function(_authInterceptor_, _authService_, _$rootScope_){
       authInterceptor = _authInterceptor_;
       authService = _authService_;
+      $rootScope = _$rootScope_;
     }));
 
 
-    it("should set config on correct server", function (){
-      authService.setIdentity("OK");
-      var config = authInterceptor.request({url: URL_ROOT + "/test/"});
-      expect(config.headers.Authorization).toEqual(authService.authHeader());
+    it("should set config on correct server", function (done){
+      authService.setIdentity("OK").then(function() {
+        var config = authInterceptor.request({url: URL_ROOT + "/test/"});
+        expect(config.headers.Authorization).toEqual(authService.authHeader());
+      }).finally(done);
+      $rootScope.$apply();
+    });
+
+    it("should not set config on incorrect server", function (done){
+      authService.setIdentity("OK").then(function() {
+        var config = authInterceptor.request({url: "http://o.co/test/"});
+        expect(config.headers).toBeUndefined();
+      }).finally(done);
+      $rootScope.$apply();
     });
 
     it("should not set config on incorrect server", function (){
-      authService.setIdentity("OK");
-      var config = authInterceptor.request({url: "http://o.co/test/"});
-      expect(config.headers).toBeUndefined();
-    });
-
-    it("should not set config on incorrect server", function (){
       var config = authInterceptor.request({url: URL_ROOT + "/test/"});
       expect(config.headers).toBeUndefined();
     });
 
 
-    it("should logout on 401 response", function() {
-      authService.setIdentity("OK");
-      var spy = sinon.spy(authService, 'logout');
-      authInterceptor.responseError({status:401});
-      expect(spy.called).toBeTruthy();
+    it("should logout on 401 response", function(done) {
+      authService.setIdentity("OK").then(function() {
+        var spy = sinon.spy(authService, 'logout');
+        authInterceptor.responseError({status:401});
+        expect(spy.called).toBeTruthy();
+      }).finally(done);
+      $rootScope.$apply();
     });
 
-    it("should not logout on valid response", function() {
-      authService.setIdentity("OK");
-      var spy = sinon.spy(authService, 'logout');
-      authInterceptor.responseError({status:500});
-      expect(spy.called).toBeFalsy();
+    it("should not logout on valid response", function(done) {
+      authService.setIdentity("OK").then(function() {
+        var spy = sinon.spy(authService, 'logout');
+        authInterceptor.responseError({status:500});
+        expect(spy.called).toBeFalsy();
+      }).finally(done);
+      $rootScope.$apply();
     });
 
     it("should not logout on 401 response if not logged in", function() {
@@ -235,54 +268,68 @@ describe("drf-lib.auth.services", function () {
   });
 
   describe("set HTTP interceptors", function() {
-    var $httpBackend, $httpProvider, $http;
+    var $httpProvider, $http;
 
     beforeEach(module(function(_$httpProvider_){
       $httpProvider = _$httpProvider_;
     }));
-    beforeEach(function() {
-      inject(function (_$httpBackend_, _authService_, _$http_) {
+    beforeEach(
+      inject(function (_$httpBackend_, _authService_, _$http_, _$rootScope_) {
         $httpBackend = _$httpBackend_;
         authService = _authService_;
         $http = _$http_;
-      });
-    });
+        $rootScope = _$rootScope_;
+      })
+    );
 
 
     it("should set the interceptor", function(){
       expect($httpProvider.interceptors).toContain('authInterceptor');
     });
 
-    it("should call request interceptor for correct server", function() {
-      authService.setIdentity("OK");
-      $httpBackend.when('GET', URL_ROOT, null, function(headers) {
-        expect(headers.Authorization).toBe(authService.authHeader())
-      }).respond("OK");
+    it("should call request interceptor for correct server", function(done) {
+      authService.setIdentity("OK").then(function() {
+        $httpBackend.when('GET', URL_ROOT, null, function(headers) {
+          expect(headers.Authorization).toBe(authService.authHeader())
+        }).respond("OK");
+        $http.get(URL_ROOT);
+      }).finally(done);
+      $httpBackend.flush();
     });
 
-    it("should not call request interceptor for incorrect server", function() {
-      authService.setIdentity("OK");
-      $httpBackend.when('GET', "http://o.co", null, function(headers) {
-        expect(headers.Authorization).toBeUndefined();
-      }).respond("OK");
+    it("should not call request interceptor for incorrect server",
+      function(done) {
+        authService.setIdentity("OK").then(function() {
+          $httpBackend.when('GET', "http://o.co", null, function(headers) {
+            expect(headers.Authorization).toBeUndefined();
+          }).respond("OK");
+          $http.get("http://o.co");
+        }).finally(done);
+        $httpBackend.flush();
     });
 
     it("should not call request interceptor if not logged in", function() {
       $httpBackend.when('GET', URL_ROOT, null, function(headers) {
-        expect(headers.Authorization).toBeUndefined();
+        return headers.Authorization === undefined;
       }).respond("OK");
+      $http.get(URL_ROOT);
+      $httpBackend.flush();
     });
 
     it("should call response interceptor on 401", function(done) {
-      authService.setIdentity("OK");
-      var spy = sinon.spy(authService, 'logout');
       $httpBackend.whenGET(URL_ROOT, function(headers) {
         expect(headers.Authorization).toBe(authService.authHeader());
         return true;
       }).respond(401, {'reason': 'duh'});
-      $http.get(URL_ROOT).finally(done);
+
+      authService.setIdentity("OK").then(function() {
+        var spy = sinon.spy(authService, 'logout');
+        $http.get(URL_ROOT).finally(function() {
+          expect(spy.called).toBeTruthy();
+          done();
+        });
+      });
       $httpBackend.flush();
-      expect(spy.called).toBeTruthy();
     });
 
     it("should not call response interceptor if not logged in", function(done) {
@@ -297,15 +344,19 @@ describe("drf-lib.auth.services", function () {
     });
 
     it("should not call response interceptor if no error", function(done) {
-      authService.setIdentity("OK");
-      var spy = sinon.spy(authService, 'logout');
       $httpBackend.whenGET(URL_ROOT, function(headers) {
         expect(headers.Authorization).toBe(authService.authHeader());
         return true;
       }).respond(200, "OK");
-      $http.get(URL_ROOT).finally(done);
+
+      authService.setIdentity("OK").then(function() {
+        var spy = sinon.spy(authService, 'logout');
+        $http.get(URL_ROOT).finally(function() {
+          expect(spy.called).toBeFalsy();
+          done();
+        });
+      });
       $httpBackend.flush();
-      expect(spy.called).toBeFalsy();
     });
   });
 });
