@@ -227,7 +227,9 @@ authModule.provider('authService', function () {
 
   self.$get = [
     'authRest', '$localStorage', '$injector', '$log', 'userRest', 'errorParser',
-    function (authRest, $localStorage, $injector, $log, userRest, errorParser) {
+    'jwtHelper',
+    function (authRest, $localStorage, $injector, $log, userRest, errorParser,
+              jwtHelper) {
       return new authService(
         authRest, $localStorage, $injector, $log, userRest, errorParser,
         loginCallbacks, logoutCallbacks
