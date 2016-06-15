@@ -232,7 +232,7 @@ authModule.provider('authService', function () {
               jwtHelper) {
       return new authService(
         authRest, $localStorage, $injector, $log, userRest, errorParser,
-        loginCallbacks, logoutCallbacks
+        jwtHelper, loginCallbacks, logoutCallbacks
       );
     }
   ];
