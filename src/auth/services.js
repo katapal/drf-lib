@@ -4,7 +4,7 @@
 
 var authModule = angular.module(
   'drf-lib.auth.services',
-  ['drf-lib.auth.rest', 'drf-lib.user.rest', 'drf-lib.error']
+  ['drf-lib.auth.rest', 'drf-lib.user.rest', 'drf-lib.error', 'angular-jwt']
 )
   .service(
   'authInterceptor',
@@ -38,9 +38,9 @@ var authModule = angular.module(
 
 var authService =
   function(authRest, $localStorage, $injector, $log, userRest, errorParser,
-           loginCallbacks, logoutCallbacks) {
+           loginCallbacks, logoutCallbacks, jwtHelper) {
     var self = this;
-
+    self.jwtHelper = jwtHelper;
     self.authRest = authRest;
     self.$localStorage = $localStorage;
     self.$injector = $injector;
@@ -57,15 +57,22 @@ var authService =
 authService.prototype.login = function (u, p) {
   var self = this;
   return self.authRest.login(u, p).then(function(token) {
-    self.setIdentity(token, u);
-    return token;
+    return self.setIdentity(token, u);
+  }).then(function() {
+    return self.userRest.getProfile()
+      .catch(function(err) {
+        var msg = self.errorParser.extractMessage(err);
+        self.$log.error("Could not load user profile: " + msg);
+        throw err;
+      });
   });
 };
 
 authService.prototype.externalLogin = function(provider, request) {
   var self = this;
   return self.authRest.externalLogin(provider, request).then(function(token) {
-    self.setIdentity(token, null);
+    return self.setIdentity(token, null);
+  }).then(function() {
     return self.userRest.getProfile().then(function(result) {
       self.$localStorage.auth.username = result.username;
       return result;
@@ -77,21 +84,67 @@ authService.prototype.externalLogin = function(provider, request) {
   });
 };
 
-authService.prototype.setIdentity = function(token, username) {
+authService.prototype.setUserRefresh =
+  function(jwt, leeway, minDelay) {
+    var self = this;
+    try {
+      var exp = self.jwtHelper.getTokenExpirationDate(jwt);
+      // set time to execute the refresh, with LEEWAY seconds to spare
+      leeway = leeway || 5000;
+      // set a minimum delay so in case expiration is malformed or too short
+      // we don't end up overwhelming the server with JWT requests
+      minDelay = minDelay || 10000;
+      var delay =
+        Math.max(exp.getTime() - Date.now() - leeway, minDelay);
+
+      self.refreshPromise = self.$timeout(
+        function () {
+          // refresh the account token, but don't set up a new socket
+          self.setJWT(leeway, minDelay);
+        },
+        delay
+      )
+    } catch(e) {
+      self.$log.error("Could not set user refresh timer due to " + e)
+    }
+  };
+
+authService.prototype.setIdentity = function(token, username, skipCallbacks,
+                                             leeway, minDelay) {
   var self = this;
   self.$localStorage.auth = { token: token, username: username };
 
-  // run callbacks
-  for (var i = 0; i < self.loginCallbacks.length; i++) {
-    var callback = self.loginCallbacks[i];
-    try {
-      self.$injector.invoke(
-        callback, null, {token: token, username: username, 'authService': self}
-      );
-    } catch (e) {
-      self.$log.error("error running login callback: " + e);
+  return self.setJWT(skipCallbacks, leeway, minDelay).then(function() {
+    if (!skipCallbacks) {
+      // run callbacks
+      for (var i = 0; i < self.loginCallbacks.length; i++) {
+        var callback = self.loginCallbacks[i];
+        try {
+          self.$injector.invoke(
+            callback, null, {
+              token: token,
+              username: username,
+              'authService': self
+            }
+          );
+        } catch (e) {
+          self.$log.error("error running login callback: " + e);
+        }
+      }
     }
-  }
+  });
+};
+
+
+authService.prototype.setJWT = function(leeway, minDelay) {
+  var self = this;
+  if (!self.getToken())
+    return $q.reject(new Error("No token set"));
+
+  return self.authRest.jwt(self.getToken()).then(function(jwt) {
+    self.$localStorage.auth.jwt = jwt;
+    self.setUserRefresh(jwt, leeway, minDelay);
+  });
 };
 
 authService.prototype.logout = function(errorResponse) {
@@ -148,7 +201,10 @@ authService.prototype.getUsername = function() {
 
 authService.prototype.authHeader = function() {
   var self = this;
-  return "Token " + self.getToken();
+  if (self.$localStorage.auth.jwt)
+    return "JWT " + self.$localStorage.auth.jwt;
+  else
+    throw new Error("No JWT available")
 };
 
 authService.prototype.isAuthenticated = function() {

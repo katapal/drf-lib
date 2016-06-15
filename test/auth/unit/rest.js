@@ -9,7 +9,8 @@ describe("drf-lib.auth.rest", function () {
         return {
           "login": "https://testserver/login/",
           "facebook-login": "https://testserver/facebook-login/",
-          "logout": "https://testserver/logout/"
+          "logout": "https://testserver/logout/",
+          "jwt": "https:/testserver/jwt/"
         }
       })
       .service('urlService', function() {
@@ -92,4 +93,20 @@ describe("drf-lib.auth.rest", function () {
     }).finally(done);
     $httpBackend.flush();
   });
+
+  it("should obtain jwt", function(done) {
+    function hasToken(h) {
+      return h.Authorization === "Token my-token";
+    }
+
+    $httpBackend.expectGET(urlOf['jwt'], hasToken)
+      .respond({"token": "OK"});
+    authRest.jwt("my-token").then(function(jwt) {
+      expect(jwt).toEqual("OK");
+    }).catch(function(err) {
+      expect(err).toBeUndefined();
+    }).finally(done);
+
+    $httpBackend.flush();
+  })
 });

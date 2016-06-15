@@ -9,9 +9,22 @@ angular.module('drf-lib.auth.rest', ['ngResource', 'rest-api.url'])
             throw response;
         }
     
-        this.login = function (u, p) {
+        this.login = function(u, p) {
           return $http.post(urlOf['login'], {'username': u, 'password': p})
             .then(extractToken);
+        };
+
+        this.jwt = function(token) {
+          return $http({
+            method: 'GET',
+            url: urlOf['jwt'],
+            headers: { 'Authorization': 'Token ' + token }
+          }).then(function(response) {
+            if (response.status == 200)
+              return response.data.token;
+            else
+              return response;
+          });
         };
     
         this.externalLogin = function(provider, request) {
