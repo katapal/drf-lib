@@ -240,8 +240,9 @@ var authModule = angular.module(
 
 var authService =
   function(authRest, $localStorage, $injector, $log, userRest, errorParser,
-           jwtHelper, loginCallbacks, logoutCallbacks) {
+           jwtHelper, $timeout, loginCallbacks, logoutCallbacks) {
     var self = this;
+    self.$timeout = $timeout;
     self.jwtHelper = jwtHelper;
     self.authRest = authRest;
     self.$localStorage = $localStorage;
@@ -355,7 +356,11 @@ authService.prototype.logout = function(errorResponse) {
     delete self.$localStorage.auth.token;
   if (self.$localStorage.username)
     delete self.$localStorage.auth.username;
-
+  if (self.refreshPromise) {
+    self.$timeout.cancel(self.refreshPromise);
+    delete self.refreshPromise;
+  }
+  
   // run callbacks
   for (var i = 0; i < self.logoutCallbacks.length; i++) {
     var callback = self.logoutCallbacks[i];
@@ -429,12 +434,12 @@ authModule.provider('authService', function () {
 
   self.$get = [
     'authRest', '$localStorage', '$injector', '$log', 'userRest', 'errorParser',
-    'jwtHelper',
+    'jwtHelper', '$timeout',
     function (authRest, $localStorage, $injector, $log, userRest, errorParser,
-              jwtHelper) {
+              jwtHelper, $timeout) {
       return new authService(
         authRest, $localStorage, $injector, $log, userRest, errorParser,
-        jwtHelper, loginCallbacks, logoutCallbacks
+        jwtHelper, $timeout, loginCallbacks, logoutCallbacks
       );
     }
   ];
