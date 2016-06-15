@@ -38,7 +38,7 @@ var authModule = angular.module(
 
 var authService =
   function(authRest, $localStorage, $injector, $log, userRest, errorParser,
-           loginCallbacks, logoutCallbacks, jwtHelper) {
+           jwtHelper, loginCallbacks, logoutCallbacks) {
     var self = this;
     self.jwtHelper = jwtHelper;
     self.authRest = authRest;
