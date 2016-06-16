@@ -23,7 +23,9 @@ var authModule = angular.module(
           if (urlService.domainRequiresAuthorization(config.url) &&
               authService.isAuthenticated()) {
             config.headers = config.headers || {};
-            if (!config.headers.Authorization)
+            if (config.headers.Authorization)
+              return config;
+            else
               return authService.setAuthHeader(config);
           } else
             return config;
