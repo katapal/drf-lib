@@ -51,7 +51,7 @@ var authService =
     self.userRest = userRest;
     self.errorParser = errorParser;
     self.savedJWTDeferred = $q.defer();
-    self.savedJWTPromise = self.savedJWTDeferred.promise();
+    self.savedJWTPromise = self.savedJWTDeferred.promise;
 
     if ($localStorage.auth && $localStorage.auth.token)
       self.setIdentity($localStorage.auth.token, $localStorage.auth.username);
