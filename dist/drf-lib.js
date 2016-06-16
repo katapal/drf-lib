@@ -345,7 +345,7 @@ authService.prototype.setJWT = function(leeway, minDelay) {
     return $q.reject(new Error("No token set"));
 
   return self.authRest.jwt(self.getToken()).then(function(jwt) {
-    self.$localStorage.auth.jwt = jwt;
+    self.savedJWT = jwt;
     self.setUserRefresh(jwt, leeway, minDelay);
   });
 };
@@ -406,8 +406,8 @@ authService.prototype.getUsername = function() {
 
 authService.prototype.authHeader = function() {
   var self = this;
-  if (self.$localStorage.auth.jwt)
-    return "JWT " + self.$localStorage.auth.jwt;
+  if (self.savedJWT)
+    return "JWT " + self.savedJWT;
   else
     throw new Error("No JWT available")
 };
