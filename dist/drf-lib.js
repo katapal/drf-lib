@@ -451,7 +451,7 @@ authModule.provider('authService', function () {
 
   self.$get = [
     'authRest', '$localStorage', '$injector', '$log', 'userRest', 'errorParser',
-    'jwtHelper', '$timeout', $q,
+    'jwtHelper', '$timeout', '$q',
     function (authRest, $localStorage, $injector, $log, userRest, errorParser,
               jwtHelper, $timeout, $q) {
       return new authService(
