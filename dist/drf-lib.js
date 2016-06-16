@@ -226,9 +226,9 @@ var authModule = angular.module(
               authService.isAuthenticated()) {
             config.headers = config.headers || {};
             if (!config.headers.Authorization)
-              config.headers.Authorization = authService.authHeader();
-          }
-          return config;
+              return authService.setAuthHeader(config);
+          } else
+            return config;
         }
       };
     }
@@ -240,7 +240,7 @@ var authModule = angular.module(
 
 var authService =
   function(authRest, $localStorage, $injector, $log, userRest, errorParser,
-           jwtHelper, $timeout, loginCallbacks, logoutCallbacks) {
+           jwtHelper, $timeout, $q, loginCallbacks, logoutCallbacks) {
     var self = this;
     self.$timeout = $timeout;
     self.jwtHelper = jwtHelper;
@@ -252,6 +252,8 @@ var authService =
     self.logoutCallbacks = logoutCallbacks;
     self.userRest = userRest;
     self.errorParser = errorParser;
+    self.savedJWTDeferred = $q.defer();
+    self.savedJWTPromise = self.savedJWTDeferred.promise();
 
     if ($localStorage.auth && $localStorage.auth.token)
       self.setIdentity($localStorage.auth.token, $localStorage.auth.username);
@@ -345,6 +347,11 @@ authService.prototype.setJWT = function(leeway, minDelay) {
     return $q.reject(new Error("No token set"));
 
   return self.authRest.jwt(self.getToken()).then(function(jwt) {
+    try {
+      self.savedJWTDeferred.resolve(jwt);
+    } catch (e) {
+    }
+
     self.savedJWT = jwt;
     self.setUserRefresh(jwt, leeway, minDelay);
   });
@@ -404,6 +411,18 @@ authService.prototype.getUsername = function() {
     return self.$localStorage.auth.username;
 };
 
+authService.prototype.setAuthHeader = function(config) {
+  var self = this;
+  try {
+    config.headers.Authorization = self.authHeader();
+    return config;
+  } catch (e) {
+    return self.savedJWTPromise.then(function(jwt) {
+      config.headers.Authorization = "JWT " + jwt;
+      return config;
+    });
+  }
+};
 authService.prototype.authHeader = function() {
   var self = this;
   if (self.savedJWT)
@@ -432,12 +451,12 @@ authModule.provider('authService', function () {
 
   self.$get = [
     'authRest', '$localStorage', '$injector', '$log', 'userRest', 'errorParser',
-    'jwtHelper', '$timeout',
+    'jwtHelper', '$timeout', $q,
     function (authRest, $localStorage, $injector, $log, userRest, errorParser,
-              jwtHelper, $timeout) {
+              jwtHelper, $timeout, $q) {
       return new authService(
         authRest, $localStorage, $injector, $log, userRest, errorParser,
-        jwtHelper, $timeout, loginCallbacks, logoutCallbacks
+        jwtHelper, $timeout, $q, loginCallbacks, logoutCallbacks
       );
     }
   ];
