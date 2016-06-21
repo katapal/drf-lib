@@ -22,6 +22,8 @@ errorParser.prototype.extractMessage = function(response) {
     return msg;
   } else if (response.statusText)
     return self.ucfirstFilter(self.lowercaseFilter(response.statusText));
+  else if (response.message)
+    return response.message;
   else if (angular.isString(response))
     return response;
   else
