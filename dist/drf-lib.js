@@ -265,6 +265,8 @@ var authService =
   };
 
 authService.prototype.tryReconnect = function(response) {
+  var self = this;
+  
   // wrap the entire call to prevent infinite recursion
   if (!self.reconnecting && self.$localStorage.auth && 
        self.$localStorage.auth.token)
