@@ -13,10 +13,10 @@ var authModule = angular.module(
       return {
         'responseError': function(response) {
           var authService = $injector.get('authService');
-          if ((response.status == 401) && authService.isAuthenticated()) {
-            authService.logout(response);
-          }
-          return $q.reject(response);
+          if ((response.status == 401) && authService.isAuthenticated())
+            return authService.tryReconnect(response);
+          else
+            return $q.reject(response);
         },
         'request': function(config) {
           var authService = $injector.get('authService');
@@ -53,11 +53,35 @@ var authService =
     self.userRest = userRest;
     self.errorParser = errorParser;
     self.savedJWTDeferred = $q.defer();
+    self.$q = $q;
     self.savedJWTPromise = self.savedJWTDeferred.promise;
 
     if ($localStorage.auth && $localStorage.auth.token)
       self.setIdentity($localStorage.auth.token, $localStorage.auth.username);
   };
+
+authService.prototype.tryReconnect = function(response) {
+  // wrap the entire call to prevent infinite recursion
+  if (!self.reconnecting && self.$localStorage.auth && 
+       self.$localStorage.auth.token)
+  {
+    self.reconnecting = true;
+    return self.setIdentity(
+      self.$localStorage.auth.token,
+      self.$localStorage.auth.username
+    ).catch(function (err) {
+      // if we couldn't reconnect, throw the original error
+      return self.$q.reject(response);
+    }).then(function (result) {
+      var $http = self.$injector.get('$http');
+      return $http(response.config);
+    }).finally(function() {
+      self.reconnecting = false;
+    });
+  } else
+    return $q.reject(response);
+
+};
 
 authService.prototype.login = function (u, p) {
   var self = this;
