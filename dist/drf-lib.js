@@ -285,7 +285,7 @@ authService.prototype.tryReconnect = function(response) {
       self.reconnecting = false;
     });
   } else
-    return $q.reject(response);
+    return self.$q.reject(response);
 
 };
 
