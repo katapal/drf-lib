@@ -219,14 +219,12 @@ var authModule = angular.module(
           var authService = $injector.get('authService');
           var result;
           if ((response.status == 401) && authService.isAuthenticated())
-            result = authService.tryReconnect(response);
+            result = authService.tryReconnect(response).catch(function(err) {
+              authService.logout();
+              throw err;
+            });
           else
             result = $q.reject(response);
-
-          return result.catch(function(err) {
-            authService.logout();
-            throw err;
-          });
         },
         'request': function(config) {
           var authService = $injector.get('authService');
