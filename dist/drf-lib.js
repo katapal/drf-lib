@@ -58,7 +58,7 @@ angular.module("drf-lib.util", [])
           if (!postProcess)
             postProcess = function(x) { return x; };
 
-          return p.then(postProcess).then(function(result) {
+          return p.then(function(result) {
             if (result.hasOwnProperty("results")) {
               var ret = result.results;
               if (angular.isNumber(result.count)) 
@@ -66,7 +66,7 @@ angular.module("drf-lib.util", [])
               return ret;
             } else 
               return result;
-          });
+          }).then(postProcess);
         };
       };
     }
