@@ -36,8 +36,8 @@ errorModule.service('errorParser', errorParser);
  */
 angular.module("drf-lib.util", [])
   .service("restServiceHelper",
-  ["drfUtil",
-    function(drfUtil) {
+  ["drfUtil", "$resource",
+    function(drfUtil, $resource) {
       var self = this;
 
       /**
@@ -69,6 +69,32 @@ angular.module("drf-lib.util", [])
           }).then(postProcess);
         };
       };
+
+      self.resourceWithExtraHeaders =
+        function(extraHeaders, url, params, actions, options) {
+          var k;
+          var allActions = {
+            get: {method: "GET", headers: extraHeaders},
+            query: {
+              method: "GET",
+              isArray: true,
+              headers: extraHeaders
+            },
+            save: {method: "POST", headers: extraHeaders},
+            remove: {method: "DELETE", headers: extraHeaders},
+            delete: {method: "DELETE", headers: extraHeaders},
+            update: {method: "PATCH", headers: extraHeaders}
+          };
+
+          for (k in actions) {
+            if (actions.hasOwnProperty(k)) {
+              actions[k].headers = extraHeaders;
+              allActions[k] = actions[k];
+            }
+          }
+
+          return $resource(url, params, allActions, options);
+        }
     }
   ])
   .service("drfUtil", ['$window', '$q', function($window, $q) {
