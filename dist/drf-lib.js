@@ -49,11 +49,12 @@ angular.module("drf-lib.util", [])
        * @param postProcess
        * @returns {Function}
        */
-      self.createListFunction = function(resource, postProcess) {
+      self.createListFunction = function(resource, postProcess, action) {
         return function(filterArgs) {
           filterArgs = drfUtil.underscoredProperties(filterArgs) || {};
 
-          var p = resource.get(filterArgs).$promise;
+          action = action || "get";
+          var p = resource[action](filterArgs).$promise;
 
           if (!postProcess)
             postProcess = function(x) { return x; };
