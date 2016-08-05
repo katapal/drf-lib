@@ -244,7 +244,7 @@ describe("drf-lib.auth.services", function () {
 
     it("should logout on 401 response", function(done) {
       authService.setIdentity("OK").then(function() {
-        var spy = sinon.stub(authService, 'tryReconnect');
+        var spy = sinon.spy(authService, 'tryReconnect');
         authInterceptor.responseError({status:401});
         expect(spy.called).toBeTruthy();
       }).finally(done);
@@ -323,7 +323,7 @@ describe("drf-lib.auth.services", function () {
       }).respond(401, {'reason': 'duh'});
 
       authService.setIdentity("OK").then(function() {
-        var spy = sinon.stub(authService, 'tryReconnect');
+        var spy = sinon.spy(authService, 'tryReconnect');
         $http.get(URL_ROOT).finally(function() {
           expect(spy.called).toBeTruthy();
           done();

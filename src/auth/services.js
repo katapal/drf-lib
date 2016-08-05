@@ -17,7 +17,7 @@ var authModule = angular.module(
           if ((response.status == 401) && authService.isAuthenticated())
             return authService.tryReconnect(response).catch(function(err) {
               authService.logout();
-              throw err;
+              return $q.reject(err);
             });
           else
             return $q.reject(response);

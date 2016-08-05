@@ -70,17 +70,21 @@ angular.module("drf-lib.util", [])
     var s = $window.s;
 
     function createStringRewriter(f) {
-      function rewriter(str) {
-        if (angular.isArray(str)) {
-          var arr = str;
+      function rewriter(arg) {
+        var ret;
+        if (angular.isArray(arg)) {
+          var arr = arg;
           var arrCopy = [];
           for (var i = 0; i < arr.length; i++)
             arrCopy.push(rewriter(arr[i]));
-          return arrCopy;
-        } else if (angular.isObject(str)) {
-          var obj = str, objCopy = {};
+          ret = arrCopy;
+        }
+
+        if (angular.isObject(arg) || angular.isArray(arg)) {
+          var obj = arg, objCopy = ret || {};
           for (var property in obj) {
-            if (obj.hasOwnProperty(property) && property.indexOf('$') !== 0) {
+            if (obj.hasOwnProperty(property) && property.indexOf('$') !== 0 &&
+                !angular.isNumber(property)) {
               if (angular.isObject(obj[property]))
                 objCopy[f(property)] = rewriter(obj[property]);
               else
@@ -88,10 +92,10 @@ angular.module("drf-lib.util", [])
             }
           }
 
-          return objCopy;
-        } else {
-          return str;
+          ret = objCopy;
         }
+
+        return ret;
       }
 
       return rewriter;

@@ -55,37 +55,45 @@ describe("drf-lib.util", function () {
   });
 
   it("should convert object underscore to camel case", function () {
+    var arr = ["what_is", "the", {"truth_of": "it_all"}];
+    arr.this_is_special = 1;
+    var arrCamel = ["what_is", "the", {"truthOf": "it_all"}];
+    arrCamel.thisIsSpecial = 1;
     expect(drfUtil.camelizeProperties({
       "hello_world": "test",
       "another_test": {
         "ok_now": "try again",
         "tell_me": "the_truth",
-        "tell_me_again": ["what_is", "the", {"truth_of": "it_all"}]
+        "tell_me_again": arr
       }
     })).toEqual({
       "helloWorld": "test",
       "anotherTest": {
         "okNow": "try again",
         "tellMe": "the_truth",
-        "tellMeAgain": ["what_is", "the", {"truthOf": "it_all"}]
+        "tellMeAgain": arrCamel
       }
     });
   });
 
   it("should convert object camel case to underscore", function() {
+    var arr = ["what_is", "the", {"truth_of": "it_all"}];
+    arr.this_is_special = 1;
+    var arrCamel = ["what_is", "the", {"truthOf": "it_all"}];
+    arrCamel.thisIsSpecial = 1;
     expect(drfUtil.underscoredProperties({
       "helloWorld": "test",
       "anotherTest": {
         "okNow": "try again",
         "tellMe": "the_truth",
-        "tellMeAgain": ["what_is", "the", {"truthOf": "it_all"}]
+        "tellMeAgain": arrCamel
       }
     })).toEqual({
       "hello_world": "test",
       "another_test": {
         "ok_now": "try again",
         "tell_me": "the_truth",
-        "tell_me_again": ["what_is", "the", {"truth_of": "it_all"}]
+        "tell_me_again": arr
       }
     });
   });
