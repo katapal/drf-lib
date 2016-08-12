@@ -13,6 +13,8 @@ errorParser.prototype.extractMessage = function(response) {
     return response.data.non_field_errors.join(' ');
   else if (response.data && response.data.detail)
     return response.data.detail;
+  else if (response.data && angular.isArray(response.data))
+    return response.data.join(', ');
   else if (response.status == 400) {
     var msg = "";
     for (var field in response.data) {

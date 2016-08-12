@@ -13,6 +13,8 @@ errorParser.prototype.extractMessage = function(response) {
     return response.data.non_field_errors.join(' ');
   else if (response.data && response.data.detail)
     return response.data.detail;
+  else if (response.data && angular.isArray(response.data))
+    return response.data.join(', ');
   else if (response.status == 400) {
     var msg = "";
     for (var field in response.data) {
@@ -294,10 +296,18 @@ var authService =
     self.savedJWTDeferred = $q.defer();
     self.$q = $q;
     self.savedJWTPromise = self.savedJWTDeferred.promise;
-
-    if ($localStorage.auth && $localStorage.auth.token)
-      self.setIdentity($localStorage.auth.token, $localStorage.auth.username);
   };
+
+authService.prototype.initialLogin = function() {
+  var self = this;
+  if (self.$localStorage.auth && self.$localStorage.auth.token)
+    return self.setIdentity(
+      self.$localStorage.auth.token,
+      self.$localStorage.auth.username
+    );
+  else
+    return self.$q.when(null);
+};
 
 authService.prototype.tryReconnect = function(response) {
   var self = this;

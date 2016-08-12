@@ -59,10 +59,18 @@ var authService =
     self.savedJWTDeferred = $q.defer();
     self.$q = $q;
     self.savedJWTPromise = self.savedJWTDeferred.promise;
-
-    if ($localStorage.auth && $localStorage.auth.token)
-      self.setIdentity($localStorage.auth.token, $localStorage.auth.username);
   };
+
+authService.prototype.initialLogin = function() {
+  var self = this;
+  if (self.$localStorage.auth && self.$localStorage.auth.token)
+    return self.setIdentity(
+      self.$localStorage.auth.token,
+      self.$localStorage.auth.username
+    );
+  else
+    return self.$q.when(null);
+};
 
 authService.prototype.tryReconnect = function(response) {
   var self = this;
