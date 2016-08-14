@@ -16,12 +16,16 @@ errorParser.prototype.extractMessage = function(response) {
   else if (response.data && angular.isArray(response.data))
     return response.data.join(', ');
   else if (response.status == 400) {
-    var msg = "";
-    for (var field in response.data) {
-      msg += self.ucfirstFilter(self.lowercaseFilter(field)) +
-        ": " + response.data[field] + " ";
+    if (angular.isString(response.data))
+      return response.data;
+    else {
+      var msg = "";
+      for (var field in response.data) {
+        msg += self.ucfirstFilter(self.lowercaseFilter(field)) +
+          ": " + response.data[field] + " ";
+      }
+      return msg;
     }
-    return msg;
   } else if (response.statusText)
     return self.ucfirstFilter(self.lowercaseFilter(response.statusText));
   else if (response.message)
