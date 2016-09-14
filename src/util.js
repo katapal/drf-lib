@@ -72,6 +72,10 @@ angular.module("drf-lib.util", [])
     function createStringRewriter(f) {
       function rewriter(arg) {
         var ret;
+
+        if (angular.isDate(arg))
+          return arg;
+
         if (angular.isArray(arg)) {
           var arr = arg;
           var arrCopy = [];

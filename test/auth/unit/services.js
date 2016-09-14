@@ -245,7 +245,9 @@ describe("drf-lib.auth.services", function () {
     it("should logout on 401 response", function(done) {
       authService.setIdentity("OK").then(function() {
         var spy = sinon.spy(authService, 'tryReconnect');
-        authInterceptor.responseError({status:401});
+        authInterceptor.responseError(
+          {status:401, config: {url: "https://testserver"}}
+        );
         expect(spy.called).toBeTruthy();
       }).finally(done);
       $rootScope.$apply();
@@ -254,7 +256,9 @@ describe("drf-lib.auth.services", function () {
     it("should not logout on valid response", function(done) {
       authService.setIdentity("OK").then(function() {
         var spy = sinon.spy(authService, 'logout');
-        authInterceptor.responseError({status:500});
+        authInterceptor.responseError(
+          {status:500, config: {url: "https://testserver"}}
+        );
         expect(spy.called).toBeFalsy();
       }).finally(done);
       $rootScope.$apply();
@@ -262,7 +266,9 @@ describe("drf-lib.auth.services", function () {
 
     it("should not logout on 401 response if not logged in", function() {
       var spy = sinon.spy(authService, 'logout');
-      authInterceptor.responseError({status:401});
+      authInterceptor.responseError(
+        {status:401, config: {url: "https://testserver"}}
+      );
       expect(spy.called).toBeFalsy();
     });
   });

@@ -13,8 +13,11 @@ var authModule = angular.module(
       return {
         'responseError': function(response) {
           var authService = $injector.get('authService');
+          var config = response.config;
           var result;
-          if ((response.status == 401) && authService.isAuthenticated())
+          if ((response.status == 401) &&
+               urlService.domainRequiresAuthorization(config.url) &&
+               authService.isAuthenticated())
             return authService.tryReconnect(response).catch(function(err) {
               authService.logout();
               return $q.reject(err);
