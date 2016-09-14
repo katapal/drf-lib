@@ -316,15 +316,21 @@ describe("drf-lib.auth.services", function () {
       $httpBackend.flush();
     });
 
-    it("should call response interceptor on 401", function(done) {
-      $httpBackend.whenGET(URL_ROOT, function(headers) {
+    it("should call tryReconnect on 401", function(done) {
+      $httpBackend.expectGET(URL_ROOT, function(headers) {
         expect(headers.Authorization).toBe(authService.authHeader());
         return true;
       }).respond(401, {'reason': 'duh'});
 
+      $httpBackend.expectGET(URL_ROOT, function(headers) {
+        expect(headers.Authorization).toBe(authService.authHeader());
+        return true;
+      }).respond(200, {'status': 'OK'});
+
       authService.setIdentity("OK").then(function() {
         var spy = sinon.spy(authService, 'tryReconnect');
-        $http.get(URL_ROOT).finally(function() {
+        $http.get(URL_ROOT).then(function(response) {
+          expect(response.status).toBe(200);
           expect(spy.called).toBeTruthy();
           done();
         });
@@ -332,7 +338,7 @@ describe("drf-lib.auth.services", function () {
       $httpBackend.flush();
     });
 
-    it("should not call response interceptor if not logged in", function(done) {
+    it("should not call tryReconnect if not logged in", function(done) {
       var spy = sinon.spy(authService, 'logout');
       $httpBackend.whenGET(URL_ROOT, function(headers) {
         expect(headers.Authorization).toBeUndefined();
@@ -343,7 +349,7 @@ describe("drf-lib.auth.services", function () {
       expect(spy.called).toBeFalsy();
     });
 
-    it("should not call response interceptor if no error", function(done) {
+    it("should not call tryReconnect if no error", function(done) {
       $httpBackend.whenGET(URL_ROOT, function(headers) {
         expect(headers.Authorization).toBe(authService.authHeader());
         return true;
@@ -353,6 +359,23 @@ describe("drf-lib.auth.services", function () {
         var spy = sinon.spy(authService, 'logout');
         $http.get(URL_ROOT).finally(function() {
           expect(spy.called).toBeFalsy();
+          done();
+        });
+      });
+      $httpBackend.flush();
+    });
+
+    it("should not try to reconnect more than once on 401", function(done) {
+      $httpBackend.whenGET(URL_ROOT, function(headers) {
+        expect(headers.Authorization).toBe(authService.authHeader());
+        return true;
+      }).respond(401, {'reason': 'duh'});
+
+      authService.setIdentity("OK").then(function() {
+        var spy = sinon.spy(authService, 'tryReconnect');
+        $http.get(URL_ROOT).catch(function(response) {
+          expect(response.status).toBe(401);
+          expect(spy.called).toBeTruthy();
           done();
         });
       });
