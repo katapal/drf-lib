@@ -40,7 +40,7 @@ describe("drf-lib.auth.services", function () {
       return $q.when("logged out");
     };
     self.jwt = function() {
-      return $q.when("OK");
+      return $q.when("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImV4cCI6MjE0NTgzMDQwMH0.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWV9.uwrFKoPj8CjMPpXB76qq7nMPmuJ0UX-QJfvaIXxnhXA");
     };
     self.setUserRefresh = function() {
       
@@ -223,7 +223,8 @@ describe("drf-lib.auth.services", function () {
     it("should set config on correct server", function (done){
       authService.setIdentity("OK").then(function() {
         var config = authInterceptor.request({url: URL_ROOT + "/test/"});
-        expect(config.headers.Authorization).toEqual(authService.authHeader());
+        expect(config.headers.Authorization)
+          .toEqual("JWT " + authService.savedJWT);
       }).finally(done);
       $rootScope.$apply();
     });
@@ -236,7 +237,7 @@ describe("drf-lib.auth.services", function () {
       $rootScope.$apply();
     });
 
-    it("should not set config on incorrect server", function (){
+    it("should not set config when not logged in", function (){
       var config = authInterceptor.request({url: URL_ROOT + "/test/"});
       expect(config.headers).toBeUndefined();
     });
@@ -314,22 +315,27 @@ describe("drf-lib.auth.services", function () {
         $httpBackend.flush();
     });
 
-    it("should not call request interceptor if not logged in", function() {
+    it("should not call request interceptor if not logged in", function(done) {
       $httpBackend.when('GET', URL_ROOT, null, function(headers) {
         return headers.Authorization === undefined;
       }).respond("OK");
-      $http.get(URL_ROOT);
+      $http.get(URL_ROOT).then(function(result) {
+        expect(result.status).toBe(200);
+        expect(result.data).toBe("OK");
+      }).catch(function(err) {
+        expect(err).toBeUndefined();
+      }).finally(done);
       $httpBackend.flush();
     });
 
     it("should call tryReconnect on 401", function(done) {
       $httpBackend.expectGET(URL_ROOT, function(headers) {
-        expect(headers.Authorization).toBe(authService.authHeader());
+        expect(headers.Authorization).toBe("JWT " + authService.savedJWT);
         return true;
       }).respond(401, {'reason': 'duh'});
 
       $httpBackend.expectGET(URL_ROOT, function(headers) {
-        expect(headers.Authorization).toBe(authService.authHeader());
+        expect(headers.Authorization).toBe("JWT " + authService.savedJWT);
         return true;
       }).respond(200, {'status': 'OK'});
 
@@ -357,7 +363,7 @@ describe("drf-lib.auth.services", function () {
 
     it("should not call tryReconnect if no error", function(done) {
       $httpBackend.whenGET(URL_ROOT, function(headers) {
-        expect(headers.Authorization).toBe(authService.authHeader());
+        expect(headers.Authorization).toBe("JWT " + authService.savedJWT);
         return true;
       }).respond(200, "OK");
 
@@ -373,7 +379,7 @@ describe("drf-lib.auth.services", function () {
 
     it("should not try to reconnect more than once on 401", function(done) {
       $httpBackend.whenGET(URL_ROOT, function(headers) {
-        expect(headers.Authorization).toBe(authService.authHeader());
+        expect(headers.Authorization).toBe("JWT " + authService.savedJWT);
         return true;
       }).respond(401, {'reason': 'duh'});
 

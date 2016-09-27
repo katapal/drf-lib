@@ -261,8 +261,7 @@ var authModule = angular.module(
           var config = response.config;
           var result;
           if ((response.status == 401) &&
-               urlService.domainRequiresAuthorization(config.url) &&
-               authService.isAuthenticated())
+               urlService.domainRequiresAuthorization(config.url))
             return authService.tryReconnect(response).catch(function(err) {
               authService.logout();
               return $q.reject(err);
@@ -272,10 +271,8 @@ var authModule = angular.module(
         },
         'request': function(config) {
           var authService = $injector.get('authService');
-          if (urlService.domainRequiresAuthorization(config.url) &&
-              authService.isAuthenticated()) {
-            config.headers = config.headers || {};
-            if (config.headers.Authorization)
+          if (urlService.domainRequiresAuthorization(config.url)) {
+            if (config.headers && config.headers.Authorization)
               return config;
             else
               return authService.setAuthHeader(config);
@@ -327,6 +324,11 @@ authService.prototype.tryReconnect = function(response) {
   if (!self.reconnecting && self.$localStorage.auth && 
        self.$localStorage.auth.token)
   {
+    if (self.refreshPromise) {
+      self.$timeout.cancel(self.refreshPromise);
+      delete self.refreshPromise;
+    }
+
     self.reconnecting = true;
     return self.setIdentity(
       self.$localStorage.auth.token,
@@ -405,7 +407,7 @@ authService.prototype.setIdentity = function(token, username, skipCallbacks,
   var self = this;
   self.$localStorage.auth = { token: token, username: username };
 
-  return self.setJWT(skipCallbacks, leeway, minDelay).then(function() {
+  return self.setJWT(leeway, minDelay).then(function() {
     if (!skipCallbacks) {
       // run callbacks
       for (var i = 0; i < self.loginCallbacks.length; i++) {
@@ -451,7 +453,15 @@ authService.prototype.logout = function(errorResponse) {
     self.$timeout.cancel(self.refreshPromise);
     delete self.refreshPromise;
   }
-  
+  if (self.savedJWT)
+    delete self.savedJWT;
+  if (self.savedJWTDeferred) {
+    self.savedJWTDeferred.reject(new Error("Logged out"));
+    delete self.savedJWTDeferred;
+  }
+  if (self.savedJWTPromise)
+    delete self.savedJWTPromise;
+
   // run callbacks
   for (var i = 0; i < self.logoutCallbacks.length; i++) {
     var callback = self.logoutCallbacks[i];
@@ -499,27 +509,49 @@ authService.prototype.getUsername = function() {
 
 authService.prototype.setAuthHeader = function(config) {
   var self = this;
-  try {
-    config.headers.Authorization = self.authHeader();
+  if (self.isAuthenticated()) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = "JWT " + self.savedJWT;
     return config;
-  } catch (e) {
-    return self.savedJWTPromise.then(function(jwt) {
-      config.headers.Authorization = "JWT " + jwt;
-      return config;
-    });
-  }
-};
-authService.prototype.authHeader = function() {
-  var self = this;
-  if (self.savedJWT)
-    return "JWT " + self.savedJWT;
-  else
-    throw new Error("No JWT available")
+  } else if (self.getToken()) {
+    var pr;
+
+    // if we're waiting for the JWT to resolve
+    if (!self.savedJWT) {
+      return self.savedJWTPromise.then(function(jwt) {
+        if (jwt && !self.jwtHelper.isTokenExpired(jwt)) {
+          config.headers = config.headers || {};
+          config.headers.Authorization = "JWT " + jwt;
+        }
+        return config;
+      });
+    } else {
+      if (self.refreshPromise) {
+        self.$timeout.cancel(self.refreshPromise);
+        delete self.refreshPromise;
+      }
+
+      // if the resolved JWT is expired
+      return self.setIdentity(
+        self.$localStorage.auth.token,
+        self.$localStorage.auth.username
+      ).then(function() {
+        return self.savedJWTPromise.then(function (jwt) {
+          if (jwt && !self.jwtHelper.isTokenExpired(jwt)) {
+            config.headers = config.headers || {};
+            config.headers.Authorization = "JWT " + jwt;
+          }
+          return config;
+        });
+      });
+    }
+  } else
+    return config;
 };
 
 authService.prototype.isAuthenticated = function() {
   var self = this;
-  return self.$localStorage.auth && !!self.$localStorage.auth.token;
+  return self.savedJWT && !self.jwtHelper.isTokenExpired(self.savedJWT);
 };
 
 authModule.provider('authService', function () {
