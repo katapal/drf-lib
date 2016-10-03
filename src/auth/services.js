@@ -187,7 +187,7 @@ authService.prototype.setIdentity = function(token, username, skipCallbacks,
 authService.prototype.setJWT = function(leeway, minDelay) {
   var self = this;
   if (!self.getToken())
-    return $q.reject(new Error("No token set"));
+    return self.$q.reject(new Error("No token set"));
 
   return self.authRest.jwt(self.getToken()).then(function(jwt) {
     try {
