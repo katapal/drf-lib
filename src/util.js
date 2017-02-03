@@ -2,6 +2,11 @@
  * Created by David on 9/28/2015.
  */
 angular.module("drf-lib.util", [])
+  .filter("humanize", function() {
+    return function(input) {
+      return s.humanize(input);
+    };
+  })
   .service("restServiceHelper",
   ["drfUtil", "$resource",
     function(drfUtil, $resource) {
