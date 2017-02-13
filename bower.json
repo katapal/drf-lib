@@ -13,7 +13,8 @@
     "ngstorage": "~0.3.10",
     "underscore.string": "~3.3.4",
     "angular-filter": "^0.5.8",
-    "angular-jwt": "^0.0.9"
+    "angular-jwt": "^0.0.9",
+    "libphonenumber": "^0.9.4"
   },
   "resolutions": {
     "angular": "1.5.3"

@@ -7,6 +7,31 @@ angular.module("drf-lib.util", [])
       return s.humanize(input);
     };
   })
+  .factory("phoneUtils", function() {
+
+    phoneUtils.parsePhoneNumber = function(number, format, country) {
+      try {
+        if (phoneUtils.isValidNumber(number, country)) {
+          if (!format || format == "e164")
+            return phoneUtils.formatE164(number, country);
+          else if (format == "national")
+            return phoneUtils.formatNational(number, country);
+        }
+      } catch(e) {
+        return null;
+      }
+    };
+
+    phoneUtils.checkValidNumber = function(n, country) {
+      try {
+        return phoneUtils.isValidNumber(n, country);
+      } catch(e) {
+        return false;
+      }
+    };
+
+    return phoneUtils;
+  })
   .service("restServiceHelper",
   ["drfUtil", "$resource",
     function(drfUtil, $resource) {

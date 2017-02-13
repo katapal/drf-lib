@@ -21,6 +21,7 @@ module.exports = function(config) {
       'bower_components/angular-resource/angular-resource.js',
       'bower_components/underscore.string/dist/underscore.string.js',
       'bower_components/ngstorage/ngStorage.js',
+      'bower_components/libphonenumber/dist/libphonenumber.js',
       'src/**/*.js',
       'test/**/unit/**/*.js'
     ],
