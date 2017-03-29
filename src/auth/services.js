@@ -17,10 +17,7 @@ var authModule = angular.module(
           var result;
           if ((response.status == 401) &&
                urlService.domainRequiresAuthorization(config.url))
-            return authService.tryReconnect(response).catch(function(err) {
-              authService.logout();
-              return $q.reject(err);
-            });
+            return authService.tryReconnect(response);
           else
             return $q.reject(response);
         },
