@@ -362,7 +362,8 @@ authService.prototype.tryReconnect = function(response) {
     self.reconnecting = true;
     return self.setIdentity(
       self.$localStorage.auth.token,
-      self.$localStorage.auth.username
+      self.$localStorage.auth.username,
+      true
     ).catch(function (err) {
       // if we couldn't reconnect, throw the original error
       return self.$q.reject(response);
