@@ -287,7 +287,8 @@ authService.prototype.setAuthHeader = function(config) {
       // if the resolved JWT is expired
       return self.setIdentity(
         self.$localStorage.auth.token,
-        self.$localStorage.auth.username
+        self.$localStorage.auth.username,
+        true
       ).then(function() {
         return self.savedJWTPromise.then(function (jwt) {
           if (jwt && !self.jwtHelper.isTokenExpired(jwt)) {
