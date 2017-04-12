@@ -58,12 +58,13 @@ var authService =
     self.savedJWTPromise = self.savedJWTDeferred.promise;
   };
 
-authService.prototype.initialLogin = function() {
+authService.prototype.initialLogin = function(skipCallbacks) {
   var self = this;
   if (self.$localStorage.auth && self.$localStorage.auth.token)
     return self.setIdentity(
       self.$localStorage.auth.token,
-      self.$localStorage.auth.username
+      self.$localStorage.auth.username,
+      skipCallbacks
     );
   else
     return self.$q.when(null);
