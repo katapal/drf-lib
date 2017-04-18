@@ -2,6 +2,7 @@ angular.module('drf-lib.auth.rest', ['ngResource', 'rest-api.url'])
   .service('authRest',
     ['$http', 'urlOf', "$q", "drfUtil",
       function($http, urlOf, $q, drfUtil) {
+        var self = this;
         function extractToken(response) {
           if (response.status == 200)
             return response.data.key;
@@ -9,12 +10,12 @@ angular.module('drf-lib.auth.rest', ['ngResource', 'rest-api.url'])
             throw response;
         }
     
-        this.login = function(u, p) {
+        self.login = function(u, p) {
           return $http.post(urlOf['login'], {'username': u, 'password': p})
             .then(extractToken);
         };
 
-        this.jwt = function(token) {
+        self.jwt = function(token) {
           return $http({
             method: 'GET',
             url: urlOf['jwt'],
@@ -27,7 +28,7 @@ angular.module('drf-lib.auth.rest', ['ngResource', 'rest-api.url'])
           });
         };
     
-        this.externalLogin = function(provider, request) {
+        self.externalLogin = function(provider, request) {
           request = drfUtil.underscoredProperties(request);
           if (urlOf[provider + "-login"]) {
             return $http.post(urlOf[provider + "-login"], request)
@@ -36,10 +37,10 @@ angular.module('drf-lib.auth.rest', ['ngResource', 'rest-api.url'])
             return $q.reject({"provider": provider});
         };
     
-        this.logoutEverywhere = function() {
+        self.logoutEverywhere = function() {
           return $http.post(urlOf['logout']);
         };
-        return this;
+
       }
     ]
   );

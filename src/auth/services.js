@@ -199,7 +199,7 @@ authService.prototype.setJWT = function(leeway, minDelay) {
   });
 };
 
-authService.prototype.logout = function(errorResponse) {
+authService.prototype.logout = function(skipCallbacks, response) {
   var self = this;
   if (self.$localStorage.auth)
     delete self.$localStorage.auth;
@@ -216,20 +216,22 @@ authService.prototype.logout = function(errorResponse) {
   if (self.savedJWTPromise)
     delete self.savedJWTPromise;
 
-  // run callbacks
-  for (var i = 0; i < self.logoutCallbacks.length; i++) {
-    var callback = self.logoutCallbacks[i];
-    try {
-      self.$injector.invoke(
-        callback,
-        self,
-        {
-          'authService': self,
-          'response': errorResponse
-        }
-      );
-    } catch (e) {
-      self.$log.error("error running logout callback: " + e);
+  if (!skipCallbacks) {
+    // run callbacks
+    for (var i = 0; i < self.logoutCallbacks.length; i++) {
+      var callback = self.logoutCallbacks[i];
+      try {
+        self.$injector.invoke(
+          callback,
+          self,
+          {
+            'authService': self,
+            'response': response
+          }
+        );
+      } catch (e) {
+        self.$log.error("error running logout callback: " + e);
+      }
     }
   }
 };
