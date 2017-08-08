@@ -189,26 +189,26 @@ authService.prototype.setJWT = function(leeway, minDelay) {
   if (!self.savedJWTPromise) {
     self.savedJWTDeferred = self.$q.defer();
     self.savedJWTPromise = self.savedJWTDeferred.promise;
-
-    return self.authRest.jwt(self.getToken()).then(function (jwt) {
-      self.savedJWT = jwt;
-      self.setUserRefresh(jwt, leeway, minDelay);
-
-      try {
-        self.savedJWTDeferred.resolve(jwt);
-        delete self.savedJWTPromise;
-        delete self.savedJWTDeferred;
-      } catch (e) {
-      }
-    }).catch(function (e) {
-      try {
-        self.savedJWTDeferred.reject(e);
-        delete self.savedJWTPromise;
-        delete self.savedJWTDeferred;
-      } catch (ex) {
-      }
-    });
   }
+
+  self.authRest.jwt(self.getToken()).then(function (jwt) {
+    self.savedJWT = jwt;
+    self.setUserRefresh(jwt, leeway, minDelay);
+
+    try {
+      self.savedJWTDeferred.resolve(jwt);
+      delete self.savedJWTPromise;
+      delete self.savedJWTDeferred;
+    } catch (e) {
+    }
+  }).catch(function (e) {
+    try {
+      self.savedJWTDeferred.reject(e);
+      delete self.savedJWTPromise;
+      delete self.savedJWTDeferred;
+    } catch (ex) {
+    }
+  });
 
   return self.savedJWTPromise;
 };
