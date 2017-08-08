@@ -32,6 +32,8 @@ errorParser.prototype.extractMessage = function(response) {
     }
   } else if (response.statusText)
     return self.ucfirstFilter(self.lowercaseFilter(response.statusText));
+  else if (response.status == -1)
+    return "Network unavailable";
   else if (response.message)
     return response.message;
   else if (angular.isString(response))

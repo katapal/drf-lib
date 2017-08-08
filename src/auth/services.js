@@ -53,9 +53,7 @@ var authService =
     self.logoutCallbacks = logoutCallbacks;
     self.userRest = userRest;
     self.errorParser = errorParser;
-    self.savedJWTDeferred = $q.defer();
     self.$q = $q;
-    self.savedJWTPromise = self.savedJWTDeferred.promise;
   };
 
 authService.prototype.initialLogin = function(skipCallbacks) {
@@ -144,13 +142,11 @@ authService.prototype.setUserRefresh =
       var delay =
         Math.max(exp.getTime() - Date.now() - leeway, minDelay);
 
-      self.refreshPromise = self.$timeout(
-        function () {
-          // refresh the account token, but don't set up a new socket
+      self.refreshPromise = self.$timeout(function () {
           self.setJWT(leeway, minDelay);
         },
         delay
-      )
+      );
     } catch(e) {
       self.$log.error("Could not set user refresh timer due to " + e)
     }
@@ -161,7 +157,7 @@ authService.prototype.setIdentity = function(token, username, skipCallbacks,
   var self = this;
   self.$localStorage.auth = { token: token, username: username };
 
-  return self.setJWT(leeway, minDelay).then(function() {
+  return self.setJWT(leeway, minDelay).then(function(jwt) {
     if (!skipCallbacks) {
       // run callbacks
       for (var i = 0; i < self.loginCallbacks.length; i++) {
@@ -179,6 +175,8 @@ authService.prototype.setIdentity = function(token, username, skipCallbacks,
         }
       }
     }
+
+    return jwt;
   });
 };
 
@@ -188,15 +186,31 @@ authService.prototype.setJWT = function(leeway, minDelay) {
   if (!self.getToken())
     return self.$q.reject(new Error("No token set"));
 
-  return self.authRest.jwt(self.getToken()).then(function(jwt) {
-    try {
-      self.savedJWTDeferred.resolve(jwt);
-    } catch (e) {
-    }
+  if (!self.savedJWTPromise) {
+    self.savedJWTDeferred = self.$q.defer();
+    self.savedJWTPromise = self.savedJWTDeferred.promise;
 
-    self.savedJWT = jwt;
-    self.setUserRefresh(jwt, leeway, minDelay);
-  });
+    return self.authRest.jwt(self.getToken()).then(function (jwt) {
+      self.savedJWT = jwt;
+      self.setUserRefresh(jwt, leeway, minDelay);
+
+      try {
+        self.savedJWTDeferred.resolve(jwt);
+        delete self.savedJWTPromise;
+        delete self.savedJWTDeferred;
+      } catch (e) {
+      }
+    }).catch(function (e) {
+      try {
+        self.savedJWTDeferred.reject(e);
+        delete self.savedJWTPromise;
+        delete self.savedJWTDeferred;
+      } catch (ex) {
+      }
+    });
+  }
+
+  return self.savedJWTPromise;
 };
 
 authService.prototype.logout = function(skipCallbacks, response) {
@@ -273,7 +287,7 @@ authService.prototype.setAuthHeader = function(config) {
     var pr;
 
     // if we're waiting for the JWT to resolve
-    if (!self.savedJWT) {
+    if (!self.savedJWT && self.savedJWTPromise) {
       return self.savedJWTPromise.then(function(jwt) {
         if (jwt && !self.jwtHelper.isTokenExpired(jwt)) {
           config.headers = config.headers || {};
@@ -292,14 +306,14 @@ authService.prototype.setAuthHeader = function(config) {
         self.$localStorage.auth.token,
         self.$localStorage.auth.username,
         true
-      ).then(function() {
-        return self.savedJWTPromise.then(function (jwt) {
-          if (jwt && !self.jwtHelper.isTokenExpired(jwt)) {
-            config.headers = config.headers || {};
-            config.headers.Authorization = "JWT " + jwt;
-          }
-          return config;
-        });
+      ).then(function(jwt) {
+        if (jwt && !self.jwtHelper.isTokenExpired(jwt)) {
+          config.headers = config.headers || {};
+          config.headers.Authorization = "JWT " + jwt;
+        }
+        return config;
+      }).catch(function() {
+        return config;
       });
     }
   } else
