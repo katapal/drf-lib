@@ -132,6 +132,10 @@ authService.prototype.externalLogin = function(provider, request) {
 authService.prototype.setUserRefresh =
   function(jwt, leeway, minDelay) {
     var self = this;
+
+    if (self.refreshPromise)
+      return;
+
     try {
       var exp = self.jwtHelper.getTokenExpirationDate(jwt);
       // set time to execute the refresh, with LEEWAY seconds to spare
@@ -143,6 +147,7 @@ authService.prototype.setUserRefresh =
         Math.max(exp.getTime() - Date.now() - leeway, minDelay);
 
       self.refreshPromise = self.$timeout(function () {
+          delete self.refreshPromise;
           self.setJWT(leeway, minDelay);
         },
         delay
