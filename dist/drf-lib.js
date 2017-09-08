@@ -509,7 +509,7 @@ authService.prototype.setJWT = function(leeway, minDelay) {
       // without backoff
 
       // For server-side errors, use exponential backoff
-      if (err.status >= 500) {
+      if (e.status >= 500) {
         self.refreshErrorDelay *= 2;
         // set max refresh delay to 15 minutes
         self.refreshErrorDelay = Math.min(self.refreshErrorDelay, 15 * 60 * 1000);
