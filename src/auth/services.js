@@ -219,12 +219,19 @@ authService.prototype.setJWT = function(leeway, minDelay) {
     // recoverable
 
     if (!self.refreshPromise && (e.status < 0 || e.status >= 500)) {
+      // set initial delay
       self.refreshErrorDelay = self.refreshErrorDelay ||
-        (Math.random() + 1)*1000;
-      self.refreshErrorDelay *= 2;
+        (Math.random() + 1) * 1000;
 
-      // set max refresh delay to 15 minutes
-      self.refreshErrorDelay = Math.min(self.refreshErrorDelay, 15*60*1000);
+      // For network connectivity issues (status < 0), keep same delay
+      // without backoff
+
+      // For server-side errors, use exponential backoff
+      if (err.status >= 500) {
+        self.refreshErrorDelay *= 2;
+        // set max refresh delay to 15 minutes
+        self.refreshErrorDelay = Math.min(self.refreshErrorDelay, 15 * 60 * 1000);
+      }
 
       self.refreshPromise = self.$timeout(function () {
           delete self.refreshPromise;
