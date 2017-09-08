@@ -142,17 +142,10 @@ angular.module("drf-lib.util", [])
       return function () {
         beforeCall();
         var ret = f.apply(this, arguments);
-        if (ret && ret.then)
-          return ret.then(
-            function(r) {
-              afterCall();
-              return r;
-            },
-            function (e) {
-              afterCall();
-              return $q.reject(e);
-            }
-          );
+        if (ret && ret.finally)
+          return ret.finally(function() {
+            afterCall();
+          });
         else {
           afterCall();
           return ret;

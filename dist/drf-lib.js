@@ -194,17 +194,10 @@ angular.module("drf-lib.util", [])
       return function () {
         beforeCall();
         var ret = f.apply(this, arguments);
-        if (ret && ret.then)
-          return ret.then(
-            function(r) {
-              afterCall();
-              return r;
-            },
-            function (e) {
-              afterCall();
-              return $q.reject(e);
-            }
-          );
+        if (ret && ret.finally)
+          return ret.finally(function() {
+            afterCall();
+          });
         else {
           afterCall();
           return ret;
@@ -486,6 +479,7 @@ authService.prototype.setJWT = function(leeway, minDelay) {
   }
 
   self.authRest.jwt(self.getToken()).then(function (jwt) {
+    self.refreshErrorDelay = 0;
     self.savedJWT = jwt;
     self.setUserRefresh(jwt, leeway, minDelay);
 
@@ -501,6 +495,21 @@ authService.prototype.setJWT = function(leeway, minDelay) {
       delete self.savedJWTPromise;
       delete self.savedJWTDeferred;
     } catch (ex) {
+    }
+
+    // try again after leeway (or 15000 if leeway not set) if error is
+    // recoverable
+
+    if (!self.refreshPromise && (e.status < 0 || e.status >= 500)) {
+      self.refreshErrorDelay = self.refreshErrorDelay || (Math.random() + 1);
+      self.refreshErrorDelay *= 2;
+
+      self.refreshPromise = self.$timeout(function () {
+          delete self.refreshPromise;
+          self.setJWT(leeway, minDelay);
+        },
+        self.refreshErrorDelay
+      );
     }
   });
 
