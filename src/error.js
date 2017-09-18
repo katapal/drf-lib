@@ -1,11 +1,12 @@
 var errorModule = angular.module('drf-lib.error', ['angular.filter']);
 
-var errorParser = function(lowercaseFilter, ucfirstFilter) {
+var errorParser = function(lowercaseFilter, ucfirstFilter, $window) {
   this.ucfirstFilter = ucfirstFilter;
   this.lowercaseFilter = lowercaseFilter;
+  this.$window = $window;
 };
 
-errorParser.$inject = ['lowercaseFilter', 'ucfirstFilter'];
+errorParser.$inject = ['lowercaseFilter', 'ucfirstFilter', '$window'];
 
 errorParser.prototype.extractMessage = function(response) {
   var self = this, i, extracted, msg, field;
@@ -32,9 +33,12 @@ errorParser.prototype.extractMessage = function(response) {
     }
   } else if (response.statusText)
     return self.ucfirstFilter(self.lowercaseFilter(response.statusText));
-  else if (response.status == -1)
-    return "Network unavailable";
-  else if (response.message)
+  else if (response.status == -1) {
+    if (self.$window.navigator.onLine)
+      return "Server unavailable";
+    else
+      return "Network unavailable";
+  } else if (response.message)
     return response.message;
   else if (angular.isString(response))
     return response;
