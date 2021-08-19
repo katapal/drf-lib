@@ -11,7 +11,7 @@ angular.module("drf-lib.util", [])
 
     phoneUtils.parsePhoneNumber = function(number, format, country) {
       try {
-        if (phoneUtils.isValidNumber(number, country)) {
+        if (phoneUtils.isPossibleNumber(number, country)) {
           if (!format || format == "e164")
             return phoneUtils.formatE164(number, country);
           else if (format == "national")
@@ -24,7 +24,7 @@ angular.module("drf-lib.util", [])
 
     phoneUtils.checkValidNumber = function(n, country) {
       try {
-        return phoneUtils.isValidNumber(n, country);
+        return phoneUtils.isPossibleNumber(n, country);
       } catch(e) {
         return false;
       }
@@ -59,10 +59,10 @@ angular.module("drf-lib.util", [])
           return p.then(function(result) {
             if (result.hasOwnProperty("results")) {
               var ret = result.results;
-              if (angular.isNumber(result.count)) 
+              if (angular.isNumber(result.count))
                 ret.count = result.count;
               return ret;
-            } else 
+            } else
               return result;
           }).then(postProcess);
         };
@@ -180,5 +180,5 @@ angular.module("drf-lib.util", [])
         return v.toString(16);
       });
     };
-    
+
   }]);
